@@ -69,6 +69,11 @@
   resolved "https://registry.yarnpkg.com/@types/parsimmon/-/parsimmon-1.10.6.tgz#8fcf95990514d2a7624aa5f630c13bf2427f9cdd"
   integrity sha512-FwAQwMRbkhx0J6YELkwIpciVzCcgEqXEbIrIn3a2P5d3kGEHQ3wVhlN3YdVepYP+bZzCYO6OjmD4o9TGOZ40rA==
 
+"@webgpu/types@^0.0.39":
+  version "0.0.39"
+  resolved "https://registry.yarnpkg.com/@webgpu/types/-/types-0.0.39.tgz#20a8713d5654eb4a8244d20dc9c42b1303b338a7"
+  integrity sha512-YmV+iWhX9oFsKGLCpt5kvTb+B7kZGXZ++J8pPkPt5F/AX+9jtPeN7b6c8hrAjkcibEWySRT3a3VG1Ki1vAWQzQ==
+
 ajv@^6.12.3:
   version "6.12.6"
   resolved "https://registry.yarnpkg.com/ajv/-/ajv-6.12.6.tgz#baf5a62e802b07d977034586f8c3baf5adf26df4"
