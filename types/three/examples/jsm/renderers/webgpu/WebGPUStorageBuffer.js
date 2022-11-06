@@ -2,19 +2,15 @@ import WebGPUBuffer from './WebGPUBuffer.js';
 import { GPUBindingType } from './constants.js';
 
 class WebGPUStorageBuffer extends WebGPUBuffer {
+    constructor(name, attribute) {
+        super(name, GPUBindingType.StorageBuffer, attribute.array);
 
-	constructor( name, attribute ) {
+        this.isStorageBuffer = true;
 
-		super( name, GPUBindingType.StorageBuffer, attribute.array );
+        this.usage |= GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE;
 
-		this.isStorageBuffer = true;
-
-		this.usage |= GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE;
-
-		this.attribute = attribute;
-
-	}
-
+        this.attribute = attribute;
+    }
 }
 
 export default WebGPUStorageBuffer;

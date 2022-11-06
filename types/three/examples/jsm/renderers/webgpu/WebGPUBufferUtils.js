@@ -1,33 +1,23 @@
 import { GPUChunkSize } from './constants.js';
 
-function getFloatLength( floatLength ) {
+function getFloatLength(floatLength) {
+    // ensure chunk size alignment (STD140 layout)
 
-	// ensure chunk size alignment (STD140 layout)
-
-	return floatLength + ( ( GPUChunkSize - ( floatLength % GPUChunkSize ) ) % GPUChunkSize );
-
+    return floatLength + ((GPUChunkSize - (floatLength % GPUChunkSize)) % GPUChunkSize);
 }
 
-function getVectorLength( count, vectorLength = 4 ) {
+function getVectorLength(count, vectorLength = 4) {
+    const strideLength = getStrideLength(vectorLength);
 
-	const strideLength = getStrideLength( vectorLength );
+    const floatLength = strideLength * count;
 
-	const floatLength = strideLength * count;
-
-	return getFloatLength( floatLength );
-
+    return getFloatLength(floatLength);
 }
 
-function getStrideLength( vectorLength ) {
+function getStrideLength(vectorLength) {
+    const strideLength = 4;
 
-	const strideLength = 4;
-
-	return vectorLength + ( ( strideLength - ( vectorLength % strideLength ) ) % strideLength );
-
+    return vectorLength + ((strideLength - (vectorLength % strideLength)) % strideLength);
 }
 
-export {
-	getFloatLength,
-	getVectorLength,
-	getStrideLength
-};
+export { getFloatLength, getVectorLength, getStrideLength };

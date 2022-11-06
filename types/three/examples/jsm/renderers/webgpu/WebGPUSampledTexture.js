@@ -2,72 +2,54 @@ import WebGPUBinding from './WebGPUBinding.js';
 import { GPUBindingType, GPUTextureViewDimension } from './constants.js';
 
 class WebGPUSampledTexture extends WebGPUBinding {
+    constructor(name, texture) {
+        super(name);
 
-	constructor( name, texture ) {
+        this.isSampledTexture = true;
 
-		super( name );
+        this.texture = texture;
 
-		this.isSampledTexture = true;
+        this.dimension = GPUTextureViewDimension.TwoD;
 
-		this.texture = texture;
+        this.type = GPUBindingType.SampledTexture;
+        this.visibility = GPUShaderStage.FRAGMENT;
 
-		this.dimension = GPUTextureViewDimension.TwoD;
+        this.textureGPU = null; // set by the renderer
+    }
 
-		this.type = GPUBindingType.SampledTexture;
-		this.visibility = GPUShaderStage.FRAGMENT;
-
-		this.textureGPU = null; // set by the renderer
-
-	}
-
-	getTexture() {
-
-		return this.texture;
-
-	}
-
+    getTexture() {
+        return this.texture;
+    }
 }
 
 class WebGPUSampledArrayTexture extends WebGPUSampledTexture {
+    constructor(name, texture) {
+        super(name, texture);
 
-	constructor( name, texture ) {
+        this.isSampledArrayTexture = true;
 
-		super( name, texture );
-
-		this.isSampledArrayTexture = true;
-
-		this.dimension = GPUTextureViewDimension.TwoDArray;
-
-	}
-
+        this.dimension = GPUTextureViewDimension.TwoDArray;
+    }
 }
 
 class WebGPUSampled3DTexture extends WebGPUSampledTexture {
+    constructor(name, texture) {
+        super(name, texture);
 
-	constructor( name, texture ) {
+        this.isSampled3DTexture = true;
 
-		super( name, texture );
-
-		this.isSampled3DTexture = true;
-
-		this.dimension = GPUTextureViewDimension.ThreeD;
-
-	}
-
+        this.dimension = GPUTextureViewDimension.ThreeD;
+    }
 }
 
 class WebGPUSampledCubeTexture extends WebGPUSampledTexture {
+    constructor(name, texture) {
+        super(name, texture);
 
-	constructor( name, texture ) {
+        this.isSampledCubeTexture = true;
 
-		super( name, texture );
-
-		this.isSampledCubeTexture = true;
-
-		this.dimension = GPUTextureViewDimension.Cube;
-
-	}
-
+        this.dimension = GPUTextureViewDimension.Cube;
+    }
 }
 
 export { WebGPUSampledTexture, WebGPUSampledArrayTexture, WebGPUSampled3DTexture, WebGPUSampledCubeTexture };

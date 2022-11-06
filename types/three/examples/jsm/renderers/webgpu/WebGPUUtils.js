@@ -1,81 +1,59 @@
 import { GPUPrimitiveTopology, GPUTextureFormat } from './constants.js';
 
 class WebGPUUtils {
+    constructor(renderer) {
+        this.renderer = renderer;
+    }
 
-	constructor( renderer ) {
+    getCurrentEncoding() {
+        const renderer = this.renderer;
 
-		this.renderer = renderer;
+        const renderTarget = renderer.getRenderTarget();
+        return renderTarget !== null ? renderTarget.texture.encoding : renderer.outputEncoding;
+    }
 
-	}
+    getCurrentColorFormat() {
+        let format;
 
-	getCurrentEncoding() {
+        const renderer = this.renderer;
+        const renderTarget = renderer.getRenderTarget();
 
-		const renderer = this.renderer;
+        if (renderTarget !== null) {
+            const renderTargetProperties = renderer._properties.get(renderTarget);
+            format = renderTargetProperties.colorTextureFormat;
+        } else {
+            format = GPUTextureFormat.BGRA8Unorm; // default context format
+        }
 
-		const renderTarget = renderer.getRenderTarget();
-		return ( renderTarget !== null ) ? renderTarget.texture.encoding : renderer.outputEncoding;
+        return format;
+    }
 
-	}
+    getCurrentDepthStencilFormat() {
+        let format;
 
-	getCurrentColorFormat() {
+        const renderer = this.renderer;
+        const renderTarget = renderer.getRenderTarget();
 
-		let format;
+        if (renderTarget !== null) {
+            const renderTargetProperties = renderer._properties.get(renderTarget);
+            format = renderTargetProperties.depthTextureFormat;
+        } else {
+            format = GPUTextureFormat.Depth24PlusStencil8;
+        }
 
-		const renderer = this.renderer;
-		const renderTarget = renderer.getRenderTarget();
+        return format;
+    }
 
-		if ( renderTarget !== null ) {
+    getPrimitiveTopology(object) {
+        if (object.isMesh) return GPUPrimitiveTopology.TriangleList;
+        else if (object.isPoints) return GPUPrimitiveTopology.PointList;
+        else if (object.isLineSegments) return GPUPrimitiveTopology.LineList;
+        else if (object.isLine) return GPUPrimitiveTopology.LineStrip;
+    }
 
-			const renderTargetProperties = renderer._properties.get( renderTarget );
-			format = renderTargetProperties.colorTextureFormat;
-
-		} else {
-
-			format = GPUTextureFormat.BGRA8Unorm; // default context format
-
-		}
-
-		return format;
-
-	}
-
-	getCurrentDepthStencilFormat() {
-
-		let format;
-
-		const renderer = this.renderer;
-		const renderTarget = renderer.getRenderTarget();
-
-		if ( renderTarget !== null ) {
-
-			const renderTargetProperties = renderer._properties.get( renderTarget );
-			format = renderTargetProperties.depthTextureFormat;
-
-		} else {
-
-			format = GPUTextureFormat.Depth24PlusStencil8;
-
-		}
-
-		return format;
-
-	}
-
-	getPrimitiveTopology( object ) {
-
-		if ( object.isMesh ) return GPUPrimitiveTopology.TriangleList;
-		else if ( object.isPoints ) return GPUPrimitiveTopology.PointList;
-		else if ( object.isLineSegments ) return GPUPrimitiveTopology.LineList;
-		else if ( object.isLine ) return GPUPrimitiveTopology.LineStrip;
-
-	}
-
-	getSampleCount() {
-
-		return this.renderer._parameters.sampleCount;
-
-	}
-
+    getSampleCount() {
+        return this.renderer._parameters.sampleCount;
+    }
 }
 
 export default WebGPUUtils;

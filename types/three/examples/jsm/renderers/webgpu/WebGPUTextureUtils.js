@@ -18,17 +18,22 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { GPUTextureViewDimension, GPUIndexFormat, GPUFilterMode, GPUPrimitiveTopology, GPULoadOp, GPUStoreOp } from './constants.js';
+import {
+    GPUTextureViewDimension,
+    GPUIndexFormat,
+    GPUFilterMode,
+    GPUPrimitiveTopology,
+    GPULoadOp,
+    GPUStoreOp,
+} from './constants.js';
 
 // ported from https://github.com/toji/web-texture-tool/blob/master/src/webgpu-mipmap-generator.js
 
 class WebGPUTextureUtils {
+    constructor(device) {
+        this.device = device;
 
-	constructor( device ) {
-
-		this.device = device;
-
-		const mipmapVertexSource = `
+        const mipmapVertexSource = `
 struct VarysStruct {
 	@builtin( position ) Position: vec4<f32>,
 	@location( 0 ) vTex : vec2<f32>
@@ -61,7 +66,7 @@ fn main( @builtin( vertex_index ) vertexIndex : u32 ) -> VarysStruct {
 }
 `;
 
-		const mipmapFragmentSource = `
+        const mipmapFragmentSource = `
 @group( 0 ) @binding( 0 )
 var imgSampler : sampler;
 
@@ -76,108 +81,103 @@ fn main( @location( 0 ) vTex : vec2<f32> ) -> @location( 0 ) vec4<f32> {
 }
 `;
 
-		this.sampler = device.createSampler( { minFilter: GPUFilterMode.Linear } );
+        this.sampler = device.createSampler({ minFilter: GPUFilterMode.Linear });
 
-		// We'll need a new pipeline for every texture format used.
-		this.pipelines = {};
+        // We'll need a new pipeline for every texture format used.
+        this.pipelines = {};
 
-		this.mipmapVertexShaderModule = device.createShaderModule( {
-			code: mipmapVertexSource
-		} );
+        this.mipmapVertexShaderModule = device.createShaderModule({
+            code: mipmapVertexSource,
+        });
 
-		this.mipmapFragmentShaderModule = device.createShaderModule( {
-			code: mipmapFragmentSource
-		} );
+        this.mipmapFragmentShaderModule = device.createShaderModule({
+            code: mipmapFragmentSource,
+        });
+    }
 
-	}
+    getMipmapPipeline(format) {
+        let pipeline = this.pipelines[format];
 
-	getMipmapPipeline( format ) {
+        if (pipeline === undefined) {
+            pipeline = this.device.createRenderPipeline({
+                vertex: {
+                    module: this.mipmapVertexShaderModule,
+                    entryPoint: 'main',
+                },
+                fragment: {
+                    module: this.mipmapFragmentShaderModule,
+                    entryPoint: 'main',
+                    targets: [{ format }],
+                },
+                primitive: {
+                    topology: GPUPrimitiveTopology.TriangleStrip,
+                    stripIndexFormat: GPUIndexFormat.Uint32,
+                },
+                layout: 'auto',
+            });
 
-		let pipeline = this.pipelines[ format ];
+            this.pipelines[format] = pipeline;
+        }
 
-		if ( pipeline === undefined ) {
+        return pipeline;
+    }
 
-			pipeline = this.device.createRenderPipeline( {
-				vertex: {
-					module: this.mipmapVertexShaderModule,
-					entryPoint: 'main'
-				},
-				fragment: {
-					module: this.mipmapFragmentShaderModule,
-					entryPoint: 'main',
-					targets: [ { format } ]
-				},
-				primitive: {
-					topology: GPUPrimitiveTopology.TriangleStrip,
-					stripIndexFormat: GPUIndexFormat.Uint32
-				},
-				layout: 'auto'
-			} );
+    generateMipmaps(textureGPU, textureGPUDescriptor, baseArrayLayer = 0) {
+        const pipeline = this.getMipmapPipeline(textureGPUDescriptor.format);
 
-			this.pipelines[ format ] = pipeline;
+        const commandEncoder = this.device.createCommandEncoder({});
+        const bindGroupLayout = pipeline.getBindGroupLayout(0); // @TODO: Consider making this static.
 
-		}
+        let srcView = textureGPU.createView({
+            baseMipLevel: 0,
+            mipLevelCount: 1,
+            dimension: GPUTextureViewDimension.TwoD,
+            baseArrayLayer,
+        });
 
-		return pipeline;
+        for (let i = 1; i < textureGPUDescriptor.mipLevelCount; i++) {
+            const dstView = textureGPU.createView({
+                baseMipLevel: i,
+                mipLevelCount: 1,
+                dimension: GPUTextureViewDimension.TwoD,
+                baseArrayLayer,
+            });
 
-	}
+            const passEncoder = commandEncoder.beginRenderPass({
+                colorAttachments: [
+                    {
+                        view: dstView,
+                        loadOp: GPULoadOp.Clear,
+                        storeOp: GPUStoreOp.Store,
+                        clearValue: [0, 0, 0, 0],
+                    },
+                ],
+            });
 
-	generateMipmaps( textureGPU, textureGPUDescriptor, baseArrayLayer = 0 ) {
+            const bindGroup = this.device.createBindGroup({
+                layout: bindGroupLayout,
+                entries: [
+                    {
+                        binding: 0,
+                        resource: this.sampler,
+                    },
+                    {
+                        binding: 1,
+                        resource: srcView,
+                    },
+                ],
+            });
 
-		const pipeline = this.getMipmapPipeline( textureGPUDescriptor.format );
+            passEncoder.setPipeline(pipeline);
+            passEncoder.setBindGroup(0, bindGroup);
+            passEncoder.draw(4, 1, 0, 0);
+            passEncoder.end();
 
-		const commandEncoder = this.device.createCommandEncoder( {} );
-		const bindGroupLayout = pipeline.getBindGroupLayout( 0 ); // @TODO: Consider making this static.
+            srcView = dstView;
+        }
 
-		let srcView = textureGPU.createView( {
-			baseMipLevel: 0,
-			mipLevelCount: 1,
-			dimension: GPUTextureViewDimension.TwoD,
-			baseArrayLayer
-		} );
-
-		for ( let i = 1; i < textureGPUDescriptor.mipLevelCount; i ++ ) {
-
-			const dstView = textureGPU.createView( {
-				baseMipLevel: i,
-				mipLevelCount: 1,
-				dimension: GPUTextureViewDimension.TwoD,
-				baseArrayLayer
-			} );
-
-			const passEncoder = commandEncoder.beginRenderPass( {
-				colorAttachments: [ {
-					view: dstView,
-					loadOp: GPULoadOp.Clear,
-					storeOp: GPUStoreOp.Store,
-					clearValue: [ 0, 0, 0, 0 ]
-				} ]
-			} );
-
-			const bindGroup = this.device.createBindGroup( {
-				layout: bindGroupLayout,
-				entries: [ {
-					binding: 0,
-					resource: this.sampler
-				}, {
-					binding: 1,
-					resource: srcView
-				} ]
-			} );
-
-			passEncoder.setPipeline( pipeline );
-			passEncoder.setBindGroup( 0, bindGroup );
-			passEncoder.draw( 4, 1, 0, 0 );
-			passEncoder.end();
-
-			srcView = dstView;
-
-		}
-
-		this.device.queue.submit( [ commandEncoder.finish() ] );
-
-	}
-
+        this.device.queue.submit([commandEncoder.finish()]);
+    }
 }
 
 export default WebGPUTextureUtils;

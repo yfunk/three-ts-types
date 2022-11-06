@@ -2,82 +2,64 @@ import WebGPUNodeBuilder from './WebGPUNodeBuilder.js';
 import { NodeFrame } from 'three/nodes';
 
 class WebGPUNodes {
+    constructor(renderer, properties) {
+        this.renderer = renderer;
+        this.properties = properties;
 
-	constructor( renderer, properties ) {
+        this.nodeFrame = new NodeFrame();
+    }
 
-		this.renderer = renderer;
-		this.properties = properties;
+    get(object) {
+        const objectProperties = this.properties.get(object);
 
-		this.nodeFrame = new NodeFrame();
+        let nodeBuilder = objectProperties.nodeBuilder;
 
-	}
+        if (nodeBuilder === undefined) {
+            const scene = objectProperties.scene;
+            const lightsNode = objectProperties.lightsNode;
 
-	get( object ) {
+            nodeBuilder = new WebGPUNodeBuilder(object, this.renderer);
+            nodeBuilder.lightsNode = lightsNode;
+            nodeBuilder.fogNode = scene?.fogNode;
+            nodeBuilder.scene = scene;
+            nodeBuilder.build();
 
-		const objectProperties = this.properties.get( object );
+            objectProperties.nodeBuilder = nodeBuilder;
+        }
 
-		let nodeBuilder = objectProperties.nodeBuilder;
+        return nodeBuilder;
+    }
 
-		if ( nodeBuilder === undefined ) {
+    remove(object) {
+        const objectProperties = this.properties.get(object);
 
-			const scene = objectProperties.scene;
-			const lightsNode = objectProperties.lightsNode;
+        delete objectProperties.nodeBuilder;
+    }
 
-			nodeBuilder = new WebGPUNodeBuilder( object, this.renderer );
-			nodeBuilder.lightsNode = lightsNode;
-			nodeBuilder.fogNode = scene?.fogNode;
-			nodeBuilder.scene = scene;
-			nodeBuilder.build();
+    updateFrame() {
+        this.nodeFrame.update();
+    }
 
-			objectProperties.nodeBuilder = nodeBuilder;
+    update(object, camera) {
+        const renderer = this.renderer;
+        const material = object.material;
 
-		}
+        const nodeBuilder = this.get(object);
+        const nodeFrame = this.nodeFrame;
 
-		return nodeBuilder;
+        nodeFrame.object = object;
+        nodeFrame.camera = camera;
+        nodeFrame.renderer = renderer;
+        nodeFrame.material = material;
 
-	}
+        for (const node of nodeBuilder.updateNodes) {
+            nodeFrame.updateNode(node);
+        }
+    }
 
-	remove( object ) {
-
-		const objectProperties = this.properties.get( object );
-
-		delete objectProperties.nodeBuilder;
-
-	}
-
-	updateFrame() {
-
-		this.nodeFrame.update();
-
-	}
-
-	update( object, camera ) {
-
-		const renderer = this.renderer;
-		const material = object.material;
-
-		const nodeBuilder = this.get( object );
-		const nodeFrame = this.nodeFrame;
-
-		nodeFrame.object = object;
-		nodeFrame.camera = camera;
-		nodeFrame.renderer = renderer;
-		nodeFrame.material = material;
-
-		for ( const node of nodeBuilder.updateNodes ) {
-
-			nodeFrame.updateNode( node );
-
-		}
-
-	}
-
-	dispose() {
-
-		this.nodeFrame = new NodeFrame();
-
-	}
-
+    dispose() {
+        this.nodeFrame = new NodeFrame();
+    }
 }
 
 export default WebGPUNodes;
